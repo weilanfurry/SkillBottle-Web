@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <div id="sbToast" class="sb-toast" role="alert" aria-live="polite" style="display:none;"></div>
     <div class="layout">
       <aside class="sidebar">
         <div class="brand-wrap">
@@ -15,9 +16,15 @@
         </div>
 
         <div class="side-section">
+          <div class="search-wrap">
+            <input class="search-input" id="searchInput" type="text" placeholder="搜索…" autocomplete="off" />
+          </div>
           <nav class="nav" id="nav" aria-label="目录">
             <div class="nav-empty" id="navEmpty">加载中…</div>
             <div class="nav-items" id="navItems"></div>
+            <div class="nav-row nav-advanced" id="navAdvanced" style="display:none;" data-id="__advanced__">
+              <button class="nav-open" type="button"></button>
+            </div>
           </nav>
         </div>
 
@@ -27,14 +34,40 @@
 
       <main class="main">
         <section class="viewer" aria-label="app viewer">
+          <div class="device-toolbar" id="deviceToolbar">
+            <!-- Desktop icon -->
+            <button class="device-btn" id="deviceDesktop" title="桌面端" type="button" aria-label="桌面端">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </button>
+            <!-- Tablet icon -->
+            <button class="device-btn" id="deviceTablet" title="平板端" type="button" aria-label="平板端">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+              </svg>
+            </button>
+            <!-- Mobile icon -->
+            <button class="device-btn" id="deviceMobile" title="移动端" type="button" aria-label="移动端">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+
           <div class="viewer-empty" id="viewerEmpty">
             <div class="viewer-title" id="viewerTitle">未选择</div>
             <p class="muted" id="viewerDesc">把子文件夹放到 <code>app/</code> 里，并在每个子文件夹下放一个 <code>index.html</code>。</p>
           </div>
 
           <div class="viewer-frames" id="viewerFrames" aria-hidden="true"></div>
-          <div class="viewer-panel" id="advancedPanel" aria-label="高级模块">
-            <div class="panel-head">
+
+          <div class="viewer-panel" id="advancedPanel">
+            <div class="panel-head" id="advancedPanelHead">
               <div class="panel-title">高级模块</div>
               <div class="panel-sub">CirGeoUI 风格 · 仅黑白灰 + 蓝色品牌</div>
             </div>
@@ -43,6 +76,20 @@
                 <div class="panel-row-text">
                   <div class="panel-row-title">个性化设置</div>
                   <div class="panel-row-desc">自定义左侧标题、颜色与框架背景</div>
+                </div>
+              </div>
+
+              <!-- Theme preview strip -->
+              <div class="panel-row theme-preview-row">
+                <div class="panel-row-text">
+                  <div class="panel-row-title">主题预览</div>
+                  <div class="panel-row-desc">当前主题效果预览</div>
+                </div>
+                <div class="theme-preview-box" id="themePreviewBox" aria-hidden="true">
+                  <div class="theme-preview-inner" id="themePreviewInner">
+                    <div class="theme-preview-brand">Aa</div>
+                    <div class="theme-preview-text">示例文字</div>
+                  </div>
                 </div>
               </div>
 
@@ -112,18 +159,24 @@
               </div>
             </div>
 
-
             <div class="panel-card" id="exportCard" style="display:none;">
               <div class="panel-row" style="align-items:flex-start;">
                 <div class="panel-row-text">
                   <div class="panel-row-title">导出为静态页面</div>
                   <div class="panel-row-desc">打包整个框架 + app/ 内的项目，生成纯前端版本（无需 Python 运行）</div>
-                  <div class="panel-row-desc" id="exportStatus">点击“导出”开始</div>
+                  <div class="panel-row-desc" id="exportStatus">点击"导出"开始</div>
                   <div class="panel-row-desc">输出目录（在本项目下的 <code>result/</code>）：</div>
                   <div class="panel-row-desc"><code id="exportPath"></code></div>
                 </div>
 
                 <button class="pill-btn" type="button" id="exportBtn">导出</button>
+              </div>
+              <div class="panel-row" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);align-items:flex-start;">
+                <div class="panel-row-text">
+                  <div class="panel-row-title">打包下载 ZIP</div>
+                  <div class="panel-row-desc">将导出的静态版本打包为 ZIP 下载（包含所有子项目）</div>
+                </div>
+                <button class="pill-btn" type="button" id="exportZipBtn">下载 ZIP</button>
               </div>
             </div>
 
@@ -139,12 +192,19 @@
                   <button class="pill-btn" type="button" id="adminChangePwdBtn" style="display:none;">更改密码</button>
                 </div>
               </div>
+              <div class="panel-row" id="adminLogoutRow" style="display:none;">
+                <div class="panel-row-text">
+                  <div class="panel-row-title">会话管理</div>
+                  <div class="panel-row-desc">当前会话有效期 8 小时</div>
+                </div>
+                <button class="pill-btn" type="button" id="adminLogoutBtn">注销会话</button>
+              </div>
             </div>
             <div class="panel-card" id="manageCard" style="display:none;">
               <div class="panel-row">
                 <div class="panel-row-text">
                   <div class="panel-row-title">管理模式</div>
-                  <div class="panel-row-desc">退出后将隐藏“高级模块”，锁定项目在普通模式下不可打开</div>
+                  <div class="panel-row-desc">退出后将隐藏"高级模块"，锁定项目在普通模式下不可打开</div>
                 </div>
 
                 <button class="pill-btn" type="button" id="exitManageBtn">退出管理模式</button>
@@ -159,8 +219,3 @@
     <script src="./app.js"></script>
   </body>
 </html>
-
-
-
-
-

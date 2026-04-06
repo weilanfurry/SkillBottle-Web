@@ -15,20 +15,20 @@
 1) 安装依赖
 
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
 
 2) 启动服务
 
 ```bash
-uvicorn app:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
 
 3) 访问首页
 
 - `http://127.0.0.1:8000/`
 
-> 如果你的环境里没有 `pip/uvicorn` 命令，请先确保已安装 Python 3，并使用 `python -m pip ...` / `python -m uvicorn ...`。
+> 如果你的环境里没有 `uv` 命令，请先安装 [uv](https://github.com/astral-sh/uv)。
 
 ## 添加一个子项目
 
@@ -95,4 +95,9 @@ app/
 - `SKILLBOTTLE_LOG_LEVEL`：日志级别（默认 `INFO`）
 
 请求日志会记录 `/`、`/index.html` 和 `/api/*` 的访问与耗时。
+
+
+## 注意事项
+
+当前导出`.zip`纯前端静态页面的功能还待完善,因此目前导出的`.zip`包无法正常使用。
 
