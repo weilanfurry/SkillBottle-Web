@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>测试文件 | 精美演示面板</title>
+    <!-- Google Fonts: 现代优雅字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <!-- Font Awesome 6 (免费图标库) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background: radial-gradient(circle at 20% 30%, #0b1120, #030614);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow-x: hidden;
+            padding: 1.5rem;
+        }
+
+        /* 动态粒子/光晕背景动画 */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 70% 40%, rgba(56, 139, 253, 0.15) 0%, rgba(0, 0, 0, 0) 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(45deg, rgba(255,255,255,0.01) 0px, rgba(255,255,255,0.01) 2px, transparent 2px, transparent 8px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* 动态浮动光球 */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(70px);
+            opacity: 0.4;
+            z-index: 0;
+            animation: float 18s infinite alternate ease-in-out;
+        }
+        .orb1 {
+            width: 40vw;
+            height: 40vw;
+            background: #3b82f6;
+            top: -15%;
+            left: -10%;
+            animation-duration: 22s;
+        }
+        .orb2 {
+            width: 35vw;
+            height: 35vw;
+            background: #a855f7;
+            bottom: -20%;
+            right: -5%;
+            animation-duration: 25s;
+            animation-delay: -5s;
+        }
+        .orb3 {
+            width: 25vw;
+            height: 25vw;
+            background: #10b981;
+            top: 40%;
+            right: 20%;
+            opacity: 0.25;
+            animation-duration: 30s;
+            animation-delay: -2s;
+        }
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+            100% {
+                transform: translate(5%, 8%) scale(1.1);
+            }
+        }
+
+        /* 主卡片 - 玻璃拟态 */
+        .glass-card {
+            position: relative;
+            z-index: 10;
+            max-width: 720px;
+            width: 100%;
+            background: rgba(15, 25, 45, 0.55);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 3rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(255, 255, 255, 0.1) inset;
+            padding: 2rem 2rem 2.2rem;
+            transition: transform 0.3s ease, box-shadow 0.4s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 35px 55px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.35);
+        }
+
+        /* 头部徽章 */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(4px);
+            padding: 0.4rem 1rem;
+            border-radius: 60px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #cbd5e6;
+            letter-spacing: 0.3px;
+            margin-bottom: 1.5rem;
+            border: 0.5px solid rgba(255,255,240,0.2);
+        }
+        .badge i {
+            font-size: 0.8rem;
+            color: #60a5fa;
+        }
+
+        /* 主标题 */
+        .main-title {
+            font-size: 3.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #FFFFFF, #b9d0ff, #8bb4fe);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            line-height: 1.2;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .sub-en {
+            font-size: 1.1rem;
+            font-weight: 400;
+            color: #9aaec9;
+            margin-bottom: 1rem;
+            border-left: 3px solid #3b82f6;
+            padding-left: 0.8rem;
+            letter-spacing: 0.2px;
+        }
+
+        .description {
+            color: #cdd9f4;
+            line-height: 1.5;
+            margin: 1.2rem 0 1.8rem 0;
+            font-size: 0.95rem;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+
+        /* 测试状态区域（三个指标） */
+        .test-metrics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 1.5rem 0 1.8rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 1.5rem;
+            padding: 1rem 1.2rem;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .metric-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #e2edff;
+        }
+        .metric-item i {
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(59,130,246,0.2);
+            border-radius: 30px;
+            color: #4ade80;
+            font-size: 0.9rem;
+        }
+        .metric-item span {
+            color: #b9d0f0;
+        }
+        .status-pass {
+            color: #4ade80;
+            font-weight: 600;
+            margin-left: auto;
+        }
+
+        /* 信息面板 (时间/环境) */
+        .info-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 1.5rem;
+            padding: 1.2rem 1.2rem;
+            margin: 1.5rem 0;
+            border: 0.5px solid rgba(255,255,245,0.1);
+            transition: all 0.2s;
+        }
+        .datetime-box {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #f0f4fe;
+            margin-bottom: 1rem;
+            padding-bottom: 0.7rem;
+            border-bottom: 1px dashed rgba(255,255,255,0.15);
+        }
+        .datetime-box i {
+            color: #60a5fa;
+            font-size: 1.2rem;
+        }
+        #currentDateTime {
+            font-family: monospace;
+            letter-spacing: 0.5px;
+        }
+        .env-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: space-between;
+        }
+        .env-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: #b9c7e0;
+            background: rgba(255,255,255,0.03);
+            padding: 0.3rem 0.8rem;
+            border-radius: 40px;
+        }
+        .env-item i {
+            width: 1.4rem;
+            color: #8aaee0;
+        }
+        .env-value {
+            font-weight: 500;
+            color: #d6e5ff;
+        }
+
+        /* 按钮 + 交互 */
+        .action-btn {
+            background: linear-gradient(105deg, rgba(59,130,246,0.8), rgba(37,99,235,0.9));
+            border: none;
+            padding: 0.9rem 1.8rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            margin-top: 0.5rem;
+            width: auto;
+            border: 0.5px solid rgba(255,255,255,0.3);
+        }
+        .action-btn i {
+            font-size: 1rem;
+            transition: transform 0.2s;
+        }
+        .action-btn:hover {
+            background: linear-gradient(105deg, #3b82f6, #2563eb);
+            transform: scale(1.02);
+            box-shadow: 0 12px 28px rgba(59,130,246,0.3);
+        }
+        .action-btn:active {
+            transform: scale(0.98);
+        }
+        .action-btn:hover i {
+            transform: translateX(3px);
+        }
+
+        /* 底部footer */
+        .footer-note {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #7b8db0;
+            letter-spacing: 0.5px;
+            border-top: 0.5px solid rgba(255,255,255,0.08);
+            padding-top: 1.2rem;
+        }
+
+        /* 自定义toast通知 */
+        .toast-notify {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(20, 30, 45, 0.95);
+            backdrop-filter: blur(12px);
+            color: #eef4ff;
+            padding: 0.8rem 1.6rem;
+            border-radius: 60px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 200;
+            border: 1px solid rgba(72, 187, 120, 0.5);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+            font-family: monospace;
+        }
+        .toast-notify.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+            pointer-events: none;
+        }
+        .toast-notify i {
+            color: #4ade80;
+            font-size: 1.1rem;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 560px) {
+            .glass-card {
+                padding: 1.5rem;
+                border-radius: 2rem;
+            }
+            .main-title {
+                font-size: 2.2rem;
+            }
+            .sub-en {
+                font-size: 0.9rem;
+            }
+            .test-metrics {
+                flex-direction: column;
+                gap: 0.8rem;
+            }
+            .env-grid {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* 细微动画 */
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .glass-card {
+            animation: fadeSlideUp 0.7s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+        }
+    </style>
+</head>
+<body>
+    <!-- 漂浮背景装饰 -->
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+
+    <main class="glass-card">
+        <!-- 头部徽章 -->
+        <div class="badge">
+            <i class="fas fa-flask"></i>
+            <span>测试环境 · 稳定构建</span>
+            <i class="fas fa-check-circle" style="color:#4ade80; font-size:0.7rem;"></i>
+        </div>
+
+        <!-- 核心标题 -->
+        <div class="main-title">
+            这是一个测试文件！
+        </div>
+        <div class="sub-en">
+            <i class="fas fa-code-branch" style="margin-right: 6px;"></i> This is a test file · 验证与预览
+        </div>
+        <div class="description">
+            现代网页设计实践 · 玻璃质感 | 动态背景 | 实时环境检测。此页面用于功能测试、视觉回归及交互演示，所有模拟指标均显示正常状态。
+        </div>
+
+        <!-- 测试套件状态模拟 -->
+        <div class="test-metrics">
+            <div class="metric-item">
+                <i class="fas fa-vial"></i>
+                <span>单元测试</span>
+                <span class="status-pass"><i class="fas fa-check-circle"></i> 通过</span>
+            </div>
+            <div class="metric-item">
+                <i class="fas fa-chalkboard-user"></i>
+                <span>E2E 集成</span>
+                <span class="status-pass"><i class="fas fa-check-circle"></i> 通过</span>
+            </div>
+            <div class="metric-item">
+                <i class="fas fa-mobile-alt"></i>
+                <span>响应式验证</span>
+                <span class="status-pass"><i class="fas fa-check-circle"></i> 通过</span>
+            </div>
+        </div>
+
+        <!-- 实时信息面板 -->
+        <div class="info-panel">
+            <div class="datetime-box">
+                <i class="far fa-calendar-alt"></i>
+                <span id="currentDateTime">加载日期时间...</span>
+                <i class="far fa-clock" style="margin-left: auto;"></i>
+            </div>
+            <div class="env-grid">
+                <div class="env-item">
+                    <i class="fas fa-desktop"></i>
+                    <span>视口尺寸:</span>
+                    <span id="viewportSize" class="env-value">— x —</span>
+                </div>
+                <div class="env-item">
+                    <i class="fas fa-globe"></i>
+                    <span>浏览器:</span>
+                    <span id="browserInfo" class="env-value">检测中</span>
+                </div>
+                <div class="env-item">
+                    <i class="fas fa-microchip"></i>
+                    <span>测试标签:</span>
+                    <span class="env-value">v2.4.0 · alpha</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 交互按钮：模拟测试运行 -->
+        <div style="display: flex; justify-content: flex-start;">
+            <button id="runTestBtn" class="action-btn">
+                <i class="fas fa-play"></i> 运行快速测试
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <div class="footer-note">
+            <i class="far fa-file-alt"></i> 测试文件 | 所有数据均为模拟展示 | 实时环境报告
+        </div>
+    </main>
+
+    <!-- Toast 通知容器 -->
+    <div id="toastMsg" class="toast-notify">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastText">测试执行成功</span>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- 1. 实时动态日期时间更新 ----------
+            const datetimeElem = document.getElementById('currentDateTime');
+            function updateDateTime() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+                const weekday = weekdays[now.getDay()];
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+                const dateTimeStr = `${year}.${month}.${day} ${weekday} ${hours}:${minutes}:${seconds}`;
+                if (datetimeElem) datetimeElem.innerText = dateTimeStr;
+            }
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+
+            // ---------- 2. 环境信息: 浏览器标识精简 & 视口尺寸 ----------
+            const viewportSpan = document.getElementById('viewportSize');
+            const browserSpan = document.getElementById('browserInfo');
+            
+            function getSimpleBrowserName() {
+                const ua = navigator.userAgent;
+                if (ua.indexOf('Edg') > -1) return 'Microsoft Edge';
+                if (ua.indexOf('Chrome') > -1 && ua.indexOf('Edg') === -1) return 'Chrome';
+                if (ua.indexOf('Firefox') > -1) return 'Firefox';
+                if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1) return 'Safari';
+                if (ua.indexOf('OPR') > -1 || ua.indexOf('Opera') > -1) return 'Opera';
+                return 'Modern Browser';
+            }
+            
+            function updateViewport() {
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                if (viewportSpan) viewportSpan.innerText = `${width} × ${height} px`;
+            }
+            
+            function setBrowserInfo() {
+                const browser = getSimpleBrowserName();
+                const platform = navigator.platform || 'unknown';
+                if (browserSpan) browserSpan.innerText = `${browser} · ${platform}`;
+            }
+            
+            updateViewport();
+            setBrowserInfo();
+            window.addEventListener('resize', () => {
+                updateViewport();
+            });
+            
+            // 可选: 监听resize防抖优化已足够
+
+            // ---------- 3. 模拟测试按钮 + 精美toast通知 ----------
+            const testBtn = document.getElementById('runTestBtn');
+            const toastDiv = document.getElementById('toastMsg');
+            const toastTextSpan = document.getElementById('toastText');
+            
+            let toastTimeout = null;
+            
+            function showToast(message, isSuccess = true) {
+                if (toastTimeout) clearTimeout(toastTimeout);
+                // 设置消息内容和图标风格
+                toastTextSpan.innerText = message;
+                const iconElem = toastDiv.querySelector('i');
+                if (isSuccess) {
+                    iconElem.className = 'fas fa-check-circle';
+                    iconElem.style.color = '#4ade80';
+                    toastDiv.style.borderLeftColor = '#4ade80';
+                    toastDiv.style.border = '1px solid rgba(74, 222, 128, 0.6)';
+                } else {
+                    iconElem.className = 'fas fa-exclamation-triangle';
+                    iconElem.style.color = '#f97316';
+                    toastDiv.style.border = '1px solid rgba(249, 115, 22, 0.6)';
+                }
+                toastDiv.classList.add('show');
+                // 3.2秒后自动消失
+                toastTimeout = setTimeout(() => {
+                    toastDiv.classList.remove('show');
+                }, 2800);
+            }
+            
+            // 模拟执行测试的动作: 动态展示测试进度感
+            function runMockTest() {
+                // 按钮增加一点反馈感
+                const originalText = testBtn.innerHTML;
+                testBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> 测试运行中...';
+                testBtn.disabled = true;
+                testBtn.style.opacity = '0.7';
+                
+                // 模拟异步测试 (延迟 600ms 展示成功)
+                setTimeout(() => {
+                    // 随机偶尔展示额外成功细节，但总归是成功的测试环境
+                    const testDetails = [
+                        '所有测试用例通过 ✓ | 覆盖率 98.3%',
+                        '测试完成 · 无异常报错 ✓',
+                        '验证通过：UI组件/响应式/JS功能 ✓',
+                        '集成测试全部绿灯 · 性能指标优秀 🚀'
+                    ];
+                    const randomMsg = testDetails[Math.floor(Math.random() * testDetails.length)];
+                    showToast(`✅ ${randomMsg}`, true);
+                    
+                    // 可选动态更新测试指标区域动画小反馈 (闪烁一下绿色)
+                    const metricItems = document.querySelectorAll('.metric-item .status-pass');
+                    metricItems.forEach(item => {
+                        item.style.transition = '0.2s';
+                        item.style.transform = 'scale(1.05)';
+                        setTimeout(() => {
+                            if (item) item.style.transform = '';
+                        }, 300);
+                    });
+                    
+                    // 恢复按钮
+                    testBtn.innerHTML = originalText;
+                    testBtn.disabled = false;
+                    testBtn.style.opacity = '1';
+                }, 650);
+            }
+            
+            if (testBtn) {
+                testBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    runMockTest();
+                });
+            }
+            
+            // 额外增加一个欢迎提示(轻度提醒页面已加载)
+            window.addEventListener('load', () => {
+                // 延迟1.5s显示欢迎测试通知 (优雅)
+                setTimeout(() => {
+                    showToast('✨ 测试环境已就绪 · 所有指标正常', true);
+                }, 800);
+                
+                // 添加额外的炫光动态: 卡片加载后微光晕
+                const card = document.querySelector('.glass-card');
+                if (card) {
+                    card.style.transition = 'box-shadow 0.2s';
+                }
+            });
+            
+            // 可选：鼠标跟随高亮光效（轻量）
+            const cardElement = document.querySelector('.glass-card');
+            if (cardElement) {
+                cardElement.addEventListener('mousemove', (e) => {
+                    const rect = cardElement.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const xPercent = (x / rect.width) * 100;
+                    const yPercent = (y / rect.height) * 100;
+                    cardElement.style.setProperty('--x-pos', `${xPercent}%`);
+                    cardElement.style.setProperty('--y-pos', `${yPercent}%`);
+                    // 动态调整border光感 (软高亮)
+                    cardElement.style.borderImage = `radial-gradient(circle at ${xPercent}% ${yPercent}%, rgba(255,255,255,0.5), rgba(255,255,255,0.05)) 1`;
+                });
+                cardElement.addEventListener('mouseleave', () => {
+                    cardElement.style.borderImage = '';
+                    cardElement.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+                });
+            }
+            
+            // 额外初始化显示视口信息时确保文案准确
+            setBrowserInfo();
+            updateViewport();
+            
+            // 为测试面板增加一种控制台友好提示
+            console.log('%c✨ 测试文件已加载 | 精美UI模拟环境 | 所有测试状态通过', 'color: #4ade80; font-size: 14px; font-weight: bold;');
+        })();
+    </script>
+</body>
+</html>
