@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <title>实时时钟</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      font-family: ui-monospace, monospace;
+      color: #fff;
+    }
+    .time {
+      font-size: clamp(4rem, 15vw, 10rem);
+      font-weight: 200;
+      letter-spacing: -4px;
+      text-shadow: 0 0 40px rgba(154, 209, 255, 0.5);
+    }
+    .date {
+      margin-top: 16px;
+      font-size: clamp(1rem, 3vw, 1.5rem);
+      opacity: 0.7;
+      letter-spacing: 2px;
+    }
+    .weekday { margin-top: 8px; font-size: 1rem; opacity: 0.5; }
+  </style>
+</head>
+<body>
+  <div class="time" id="time">00:00:00</div>
+  <div class="date" id="date">----/--/--</div>
+  <div class="weekday" id="weekday"></div>
+  <script>
+    const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+    function update() {
+      const now = new Date();
+      document.getElementById('time').textContent = now.toLocaleTimeString('zh-CN', { hour12: false });
+      document.getElementById('date').textContent = now.toLocaleDateString('zh-CN').replace(/\//g, '/');
+      document.getElementById('weekday').textContent = '星期' + weekdays[now.getDay()];
+    }
+    update();
+    setInterval(update, 1000);
+  </script>
+</body>
+</html>
