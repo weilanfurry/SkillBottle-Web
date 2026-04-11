@@ -147,6 +147,27 @@ function saveJson(key, value) {
   } catch {}
 }
 
+function normalizeUnixSeconds(v) {
+  const n = typeof v === "number" ? v : parseFloat(String(v || "0"));
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  // Back-compat: older builds stored ms timestamps (Date.now()).
+  return n > 1e12 ? n / 1000 : n;
+}
+
+function nowUnixSeconds() {
+  return Date.now() / 1000;
+}
+
+function loadPersonalizeTs() {
+  const raw = loadJson(STORAGE_PERSONALIZE_TS, 0);
+  const ts = normalizeUnixSeconds(raw);
+  if (raw && typeof raw === "number" && raw > 1e12) {
+    // Migrate ms -> seconds
+    saveJson(STORAGE_PERSONALIZE_TS, ts);
+  }
+  return ts;
+}
+
 // --------------------------------------------------------------------------- //
 // Storage keys
 // --------------------------------------------------------------------------- //
@@ -171,6 +192,7 @@ let adminToken = null;  // never persisted – lives in HttpOnly cookie on serve
 let labels = loadJson(STORAGE_LABELS, {});
 let lockedObj = loadJson(STORAGE_LOCKED, {});
 const lockedIds = new Set(Object.keys(lockedObj || {}).filter((k) => lockedObj[k]));
+let serverConfigTs = 0;
 
 function isLocked(id) {
   return !!id && id !== ADVANCED_ID && lockedIds.has(id);
@@ -227,7 +249,7 @@ function initTheme() {
     toggle.addEventListener("change", () => {
       applyTheme(toggle.checked ? "light" : "dark");
       // Persist theme preference (personalize sync is separate)
-      if (manageMode && adminToken) {
+      if (manageMode) {
         syncPersonalizeToBackend();
       }
     });
@@ -296,16 +318,24 @@ function applyPersonalize(state, defaults) {
 }
 
 function syncPersonalizeToBackend() {
-  if (!manageMode || !adminToken) return;
+  if (!manageMode) return;
   const state = loadJson(STORAGE_PERSONALIZE, {}) || {};
   const theme = safeStorageGet(localStorage, STORAGE_THEME) || "dark";
-  const ts = Date.now();
+  const ts = nowUnixSeconds();
   saveJson(STORAGE_PERSONALIZE_VERSION, ts);
   saveJson(STORAGE_PERSONALIZE_TS, ts);
   fetchJson("/api/admin/config", {
     method: "POST",
-    body: JSON.stringify({ token: adminToken, personalize: state, theme, updated_at: ts }),
-  }).catch(() => {});
+    body: JSON.stringify({ personalize: state, theme, updated_at: ts }),
+  })
+    .then((res) => {
+      const nextTs = normalizeUnixSeconds(res && res.updated_at);
+      if (nextTs) {
+        serverConfigTs = nextTs;
+        saveJson(STORAGE_PERSONALIZE_TS, nextTs);
+      }
+    })
+    .catch(() => {});
 }
 
 function initPersonalize() {
@@ -349,9 +379,9 @@ function initPersonalize() {
 
   function persist() {
     saveJson(STORAGE_PERSONALIZE, state);
-    saveJson(STORAGE_PERSONALIZE_TS, Date.now());
+    saveJson(STORAGE_PERSONALIZE_TS, nowUnixSeconds());
     applyPersonalize(state, defaults);
-    if (manageMode && adminToken) {
+    if (manageMode) {
       syncPersonalizeToBackend();
     }
   }
@@ -407,7 +437,7 @@ function initPersonalize() {
       if (inputFrameBg)
         inputFrameBg.value = getCssHexVar("--card") || defaultFrameBg;
 
-      if (manageMode && adminToken) {
+      if (manageMode) {
         syncPersonalizeToBackend();
       }
     });
@@ -622,6 +652,10 @@ async function enterManageMode() {
       // Token is in HttpOnly cookie – we just get confirmation
       adminToken = data.token || "cookie";
       setManageMode(true);
+      if (!serverConfigTs) {
+        // First-time migration: persist existing local personalize to backend.
+        syncPersonalizeToBackend();
+      }
       await refreshAdminUi();
       rerenderNav();
       showToast("已进入管理模式", "success");
@@ -1352,12 +1386,14 @@ function initSearch() {
 
 async function loadServerConfig() {
   try {
-    const data = await fetchJson("/api/admin/config");
+    const data = await fetchJson("/api/config");
     if (data && data.personalize && typeof data.personalize === "object") {
-      // Conflict resolution: compare timestamps, server wins when backend is newer
-      const localTs = parseInt(safeStorageGet(localStorage, STORAGE_PERSONALIZE_TS) || "0", 10);
-      const serverTs = data.updated_at || 0;
-      if (!localTs || serverTs > localTs) {
+      // Prefer backend for cross-device sync; in manage mode we keep last-write-wins
+      const localTs = loadPersonalizeTs();
+      const serverTs = normalizeUnixSeconds(data.updated_at || 0);
+      if (serverTs) serverConfigTs = serverTs;
+      const useServer = manageMode ? (!localTs || serverTs > localTs) : (serverTs > 0);
+      if (useServer) {
         saveJson(STORAGE_PERSONALIZE, data.personalize);
         saveJson(STORAGE_PERSONALIZE_TS, serverTs);
       }

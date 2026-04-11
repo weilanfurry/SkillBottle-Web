@@ -8,7 +8,7 @@
 - `frontend/`：框架首页（`index.html` + `app.js` + `styles.css`）
 - `app/`：子项目目录（每个子目录必须包含 `index.html`）
 - `result/`：导出产物目录（`export-YYYYMMDD-HHMMSS/`）
-- `.skillbottle_admin.json`：管理员密码（PBKDF2 哈希）配置文件（可选）
+- `.skillbottle_admin.db`：SQLite 管理数据库（管理员密码哈希 / token / 个性化配置等）
 
 ## 快速开始（后端模式）
 
@@ -66,6 +66,7 @@ app/
 - **管理模式**：输入管理员密码进入（进入后会出现“高级模块”）
 - **应用编辑**：给条目改显示名称（存储在浏览器 `localStorage`）
 - **管理锁定**：锁定条目（普通模式下不可打开）
+- **个性化设置**：在“高级模块”里修改标题/颜色，保存到后端并在所有设备间同步（所有客户端会通过 `/api/config` 加载）
 - **导出为静态页面**：在“高级模块”里点击“导出”
 
 ## 管理员密码配置
@@ -73,9 +74,9 @@ app/
 管理员密码有两种来源（优先级：环境变量 > 文件）：
 
 - 环境变量：`SKILLBOTTLE_ADMIN_PASSWORD`（或 `ADMIN_PASSWORD`）
-- 文件：项目根目录下的 `.skillbottle_admin.json`（PBKDF2-SHA256）
+- 数据库：项目根目录下的 `.skillbottle_admin.db`（SQLite，存储 PBKDF2 哈希）
 
-未配置时，首次进入管理模式会提示注册密码并写入 `.skillbottle_admin.json`。
+未配置时，首次进入管理模式会提示注册密码并写入 `.skillbottle_admin.db`。
 
 ## API（后端）
 
@@ -84,11 +85,13 @@ app/
 - `GET /api/health`：健康检查
 - `GET /api/meta`：站点元信息（当前仅返回标题）
 - `GET /api/nav`：扫描 `app/` 目录生成导航
+- `GET /api/config`：公开配置（个性化标题/颜色 + 主题，用于多设备同步读取）
 - `GET|POST /api/export`：导出为纯静态站点到 `result/export-*/`
 - `GET /api/admin/status`：管理员配置状态
 - `POST /api/admin/register`：注册管理员密码（仅未配置时可用）
 - `POST /api/admin/change`：修改管理员密码
 - `POST /api/admin/verify`：验证管理员密码
+- `GET|POST /api/admin/config`：管理端配置读写（需要管理员 token/cookie）
 
 ## 日志与环境变量
 

@@ -643,6 +643,12 @@ def admin_config(request: Request) -> dict:
     data, updated_at = _load_admin_json()
     return {"personalize": data.get("personalize", {}), "theme": data.get("theme", "dark"), "updated_at": updated_at}
 
+@api.get("/config")
+def public_config() -> dict:
+    """Public, non-sensitive config for all clients (for cross-device sync)."""
+    data, updated_at = _load_admin_json()
+    return {"personalize": data.get("personalize", {}), "theme": data.get("theme", "dark"), "updated_at": updated_at}
+
 @api.post("/admin/config")
 def admin_config_update(request: Request, payload: dict = Body(...)) -> dict:
     ok, err = _require_admin(request)
