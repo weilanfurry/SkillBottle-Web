@@ -207,7 +207,7 @@ marimo/_lsp/
 __marimo__/
 
 # SkillBottle
-app/
 result/
+app/
 *.db
 .skillbottle_admin.json
