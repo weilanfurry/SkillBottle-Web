@@ -389,12 +389,13 @@ def _validate_password_strength(password: str) -> tuple[bool, str]:
 _last_result_cleanup = time.time()
 
 def _cleanup_old_exports() -> int:
-    """Remove result/export-* directories older than RESULT_MAX_AGE_DAYS. Returns count removed."""
+    """Remove result/export-* directories and zip files older than RESULT_MAX_AGE_DAYS. Returns count removed."""
     if not RESULT_DIR.exists():
         return 0
     cutoff = time.time() - RESULT_MAX_AGE_DAYS * 86400
     removed = 0
     for entry in RESULT_DIR.iterdir():
+        # Clean up export directories
         if entry.is_dir() and entry.name.startswith("export-"):
             try:
                 mtime = entry.stat().st_mtime
@@ -404,6 +405,16 @@ def _cleanup_old_exports() -> int:
                     logger.info("removed old export: %s", entry.name)
             except Exception as e:
                 logger.warning("failed to remove %s: %s", entry.name, e)
+        # Clean up zip files
+        elif entry.is_file() and entry.name.startswith("export-") and entry.name.endswith(".zip"):
+            try:
+                mtime = entry.stat().st_mtime
+                if mtime < cutoff:
+                    entry.unlink()
+                    removed += 1
+                    logger.info("removed old export zip: %s", entry.name)
+            except Exception as e:
+                logger.warning("failed to remove zip %s: %s", entry.name, e)
     return removed
 
 def _maybe_cleanup_results() -> None:
@@ -414,7 +425,7 @@ def _maybe_cleanup_results() -> None:
         try:
             removed = _cleanup_old_exports()
             if removed:
-                logger.info("cleaned up %d old export directories", removed)
+                logger.info("cleaned up %d old export directories/zips", removed)
         except Exception:
             pass
 
@@ -714,7 +725,73 @@ def nav() -> dict:
 # Static export (DOM-based path rewriting using proper HTML parsing)
 # --------------------------------------------------------------------------- #
 
+def _rewrite_html_paths(html_content: str, path_prefix: str = ".") -> str:
+    """
+    Rewrite absolute paths in HTML content to relative paths.
+    
+    Args:
+        html_content: Original HTML content
+        path_prefix: Prefix to prepend to absolute paths (default: "." for current dir)
+    
+    Returns:
+        HTML content with rewritten paths
+    """
+    if _HAS_BS4:
+        soup = _BeautifulSoup(html_content, "html.parser")
+        PATH_ATTRS = ("href", "src", "action", "data", "poster", "background")
+        for tag in soup.find_all():
+            if not hasattr(tag, "get"):
+                continue
+            for attr in PATH_ATTRS:
+                val = tag.get(attr)
+                if val and isinstance(val, str) and val.startswith("/") and not val.startswith("//"):
+                    tag[attr] = path_prefix + val
+        return str(soup)
+    else:
+        # Fallback: regex-based rewriting
+        def rewrite_tag(match):
+            tag = match.group(1)
+            attrs_str = match.group(2)
+
+            def rewrite_attr(attr_match):
+                attr_name = attr_match.group(1)
+                quote = attr_match.group(2)
+                value = attr_match.group(3)
+                if attr_name.lower() in ("href", "src", "action", "data") and \
+                   value and value.startswith("/") and not value.startswith("//"):
+                    value = path_prefix + value
+                return f'{attr_name}={quote}{value}{quote}'
+
+            rewritten_attrs = re.sub(r'(\w+)=(["\'])([^"\']*)', rewrite_attr, attrs_str)
+            return f'<{tag}{rewritten_attrs}>'
+
+        return re.sub(
+            r'<(?!(?:!--|!DOCTYPE))(\w+)\b([^>]*)>',
+            rewrite_tag,
+            html_content,
+            flags=re.IGNORECASE,
+        )
+
+
 def _export_static_site(project_root: Path, *, personalize: Optional[dict] = None, theme: Optional[str] = None) -> Path:
+    """
+    Export the entire SkillBottle site as a static site.
+    
+    This function:
+    1. Discovers all apps in APPS_DIR
+    2. Copies all app files to result/export-YYYYMMDD-HHMMSS/apps/
+    3. Rewrites paths in app HTML files to work in static context
+    4. Creates main index.html with embedded manifest
+    5. Copies frontend assets (styles.css, app.js)
+    
+    Args:
+        project_root: Path to the project root directory
+        personalize: Optional personalization settings (title, subtitle, colors)
+        theme: Optional theme setting ("dark" or "light")
+    
+    Returns:
+        Path to the exported directory
+    """
     apps_items = _discover_apps(APPS_DIR, href_prefix="apps")
 
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -722,12 +799,29 @@ def _export_static_site(project_root: Path, *, personalize: Optional[dict] = Non
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "apps").mkdir(parents=True, exist_ok=True)
 
-    # Copy apps
+    # Copy apps and rewrite paths in their HTML files
     for item in apps_items:
         src = APPS_DIR / item["id"]
         dst = out_dir / "apps" / item["id"]
         if src.exists():
-            shutil.copytree(src, dst, dirs_exist_ok=True)
+            if src.is_dir():
+                # Copy directory recursively
+                shutil.copytree(src, dst, dirs_exist_ok=True)
+                
+                # Rewrite paths in all HTML files within the app
+                for html_file in dst.rglob("*.html"):
+                    try:
+                        content = html_file.read_text(encoding="utf-8")
+                        # Calculate relative prefix based on file depth
+                        depth = len(html_file.relative_to(dst).parts) - 1
+                        prefix = "/".join([".."] * (depth + 2))  # +2 for apps/{app_id}
+                        rewritten = _rewrite_html_paths(content, path_prefix=prefix)
+                        html_file.write_text(rewritten, encoding="utf-8")
+                    except Exception as e:
+                        logger.warning("Failed to rewrite paths in %s: %s", html_file, e)
+            else:
+                # Copy single file
+                shutil.copy2(src, dst)
 
     # Write manifest
     manifest = {"items": apps_items}
@@ -812,6 +906,7 @@ def _export_static_site(project_root: Path, *, personalize: Optional[dict] = Non
     shutil.copy2(frontend_dir / "styles.css", out_dir / "styles.css")
     shutil.copy2(frontend_dir / "app.js", out_dir / "app.js")
 
+    logger.info("Exported static site to %s (%d apps)", out_dir, len(apps_items))
     return out_dir
 
 # --------------------------------------------------------------------------- #
@@ -834,6 +929,19 @@ def export_get() -> dict:
 
 @api.get("/export/zip")
 def export_zip(request: Request) -> Response:
+    """
+    Export static site as ZIP download.
+    
+    Flow:
+    1. Load admin personalize/theme from DB for the exported site
+    2. Export static site to result/export-YYYYMMDD-HHMMSS/
+    3. Create ZIP archive from the exported directory
+    4. Return ZIP file as download response
+    5. ZIP file will be cleaned up by _cleanup_old_exports after RESULT_MAX_AGE_DAYS
+    
+    Returns:
+        FileResponse: ZIP file download with proper Content-Disposition header
+    """
     # Load admin personalize/theme from DB for the exported site
     try:
         data, _ = _load_admin_json()
@@ -843,20 +951,39 @@ def export_zip(request: Request) -> Response:
         personalize = None
         theme = "dark"
 
-    out_dir = _export_static_site(PROJECT_ROOT, personalize=personalize, theme=theme)
+    # Export static site
+    try:
+        out_dir = _export_static_site(PROJECT_ROOT, personalize=personalize, theme=theme)
+    except Exception as e:
+        logger.exception("Failed to export static site: %s", e)
+        raise HTTPException(status_code=500, detail=f"导出失败: {e}")
 
+    # Create unique ZIP filename
     unique = secrets.token_hex(4)
     zip_base = out_dir.parent / f"export-{out_dir.name}-{unique}"
-    zip_path = shutil.make_archive(str(zip_base), "zip", str(out_dir))
-    zip_path = Path(zip_path)
+    
+    try:
+        zip_path_str = shutil.make_archive(str(zip_base), "zip", str(out_dir))
+        zip_path = Path(zip_path_str)
+    except Exception as e:
+        logger.exception("Failed to create ZIP archive: %s", e)
+        raise HTTPException(status_code=500, detail=f"打包失败: {e}")
 
+    # Verify ZIP file was created successfully
+    if not zip_path.exists():
+        raise HTTPException(status_code=500, detail="ZIP文件创建失败")
+
+    # Return ZIP file as download
+    # FileResponse will handle proper Content-Disposition and streaming
     response = FileResponse(
-        path=zip_path,
+        path=str(zip_path),
         filename=zip_path.name,
         media_type="application/zip",
     )
-    # Clean up zip after response is generated (best-effort)
-    # The file will be cleaned up by _cleanup_old_exports eventually
+    
+    # Log export for audit
+    _audit_log("export_zip", f"out_dir={out_dir.name}, zip={zip_path.name}")
+    
     return response
 
 # --------------------------------------------------------------------------- #
